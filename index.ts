@@ -1,46 +1,46 @@
-const express = require('express')
-const app = express()
-const port = 3001
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 
-const product_model = require('./models/product_model.ts')
+const orderController = require('./controllers/orderController.ts');
+const ordersController = require('./controllers/ordersController.ts');
+const productsController = require('./controllers/productsController.ts');
+const productController = require('./controllers/productController.ts');
 
-app.use(express.json())
-app.use(function (req, res, next) {
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers');
-    next();
+const PORT = process.env.PORT || 3001;
+
+const app = express();
+app.use(cors())
+app.use(bodyParser.json());
+
+// connect to db
+const pg = require('pg');
+const client = new pg.Client("postgres://wiotcsxq:JhIyE_1PXKRIiyogMZF5e2tlUiFoHz_R@fanny.db.elephantsql.com/wiotcsxq");
+client.connect(function(err) {
+    if (err) {
+        return console.error('could not connect to postgres', err);
+    }
+    console.log('Client connected...')
+    // client.end();
 });
 
-app.get('/', (req, res) => {
-    product_model.getProducts()
-        .then(response => {
-            res.status(200).send(response);
-        })
-        .catch(error => {
-            res.status(500).send(error);
-        })
+// routes
+app.get('/', async (req, res) => { 
+    productsController(req, res, client);
+});
+
+app.get('/orders', async (req, res) => { 
+    ordersController(req, res, client);
+});
+
+app.post('/order', async (req, res) => {
+    orderController(req, res, client);
+});
+
+app.get('/product/:id', async (req, res) => {
+    productController(req, res, client);
 })
 
-// app.post('/merchants', (req, res) => {
-//   merchant_model.createMerchant(req.body)
-//   .then(response => {
-//     res.status(200).send(response);
-//   })
-//   .catch(error => {
-//     res.status(500).send(error);
-//   })
-// })
-
-// app.delete('/merchants/:id', (req, res) => {
-//   merchant_model.deleteMerchant(req.params.id)
-//   .then(response => {
-//     res.status(200).send(response);
-//   })
-//   .catch(error => {
-//     res.status(500).send(error);
-//   })
-// })
-app.listen(port, () => {
-  console.log(`App running on port ${port}.`)
-})
+app.listen(PORT, () => {
+    console.log(`app is running on PORT:${PORT}`);
+});
